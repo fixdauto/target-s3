@@ -82,46 +82,6 @@ Full list of options in `config.json`:
 | encryption_type                     | String  | No         | (Default: 'none') The type of encryption to use. Current supported options are: 'none' and 'KMS'. |
 | encryption_key                      | String  | No         | A reference to the encryption key to use for data encryption. For KMS encryption, this should be the name of the KMS encryption key ID (e.g. '1234abcd-1234-1234-1234-1234abcd1234'). This field is ignored if 'encryption_type' is none or blank. |
 
-### To run tests:
-
-1. Define environment variables that requires running the tests
-```
-  export target_s3_ACCESS_KEY_ID=<s3-access-key-id>
-  export target_s3_SECRET_ACCESS_KEY=<s3-secret-access-key>
-  export target_s3_BUCKET=<s3-bucket>
-  export target_s3_KEY_PREFIX=<s3-key-prefix>
-```
-
-2. Install python test dependencies in a virtual env and run nose unit and integration tests
-```
-  python3 -m venv venv
-  . venv/bin/activate
-  pip install --upgrade pip
-  pip install .[test]
-```
-
-3. To run unit tests:
-```
-  nosetests --where=tests/unit
-```
-
-4. To run integration tests:
-```
-  nosetests --where=tests/integration
-```
-
-### To run pylint:
-
-1. Install python dependencies and run python linter
-```
-  python3 -m venv venv
-  . venv/bin/activate
-  pip install --upgrade pip
-  pip install .
-  pip install pylint
-  pylint target_s3 -d C,W,unexpected-keyword-arg,duplicate-code
-```
-
 ## License
 
 Apache License Version 2.0
