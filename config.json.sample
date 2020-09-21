@@ -1,6 +1,5 @@
 {
 	"aws_access_key_id": "ACCESS-KEY",
 	"aws_secret_access_key": "SECRET",
-	"s3_bucket": "BUCKET",
-	"s3_key_prefix": "SOME-PREFIX/",
+	"s3_bucket": "BUCKET"
 }
