@@ -4,14 +4,14 @@
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/target-s3.svg)](https://pypi.org/project/target-s3/)
 [![License: Apache2](https://img.shields.io/badge/License-Apache2-yellow.svg)](https://opensource.org/licenses/Apache-2.0)
 
-[Singer](https://www.singer.io/) target that uploads loads data to S3 in CSV format
+[Singer](https://www.singer.io/) target that uploads loads data to S3
 following the [Singer spec](https://github.com/singer-io/getting-started/blob/master/docs/SPEC.md).
 
 This is a [Meltano](https://meltano.com/) compatible target connector.
 
 ## How to use it
 
-The recommended method of running this target is to use it from [Meltano](https://transferwise.github.io/pipelinewise). When running it from PipelineWise you don't need to configure this tap with JSON files and most of things are automated. Please check the related documentation at [Target S3 CSV](https://transferwise.github.io/pipelinewise/connectors/targets/s3_csv.html)
+The recommended method of running this target is to use it from [Meltano](https://meltano.com/). 
 
 If you want to run this [Singer Target](https://singer.io) independently please read further.
 
@@ -86,10 +86,10 @@ Full list of options in `config.json`:
 
 1. Define environment variables that requires running the tests
 ```
-  export TARGET_S3_CSV_ACCESS_KEY_ID=<s3-access-key-id>
-  export TARGET_S3_CSV_SECRET_ACCESS_KEY=<s3-secret-access-key>
-  export TARGET_S3_CSV_BUCKET=<s3-bucket>
-  export TARGET_S3_CSV_KEY_PREFIX=<s3-key-prefix>
+  export target_s3_ACCESS_KEY_ID=<s3-access-key-id>
+  export target_s3_SECRET_ACCESS_KEY=<s3-secret-access-key>
+  export target_s3_BUCKET=<s3-bucket>
+  export target_s3_KEY_PREFIX=<s3-key-prefix>
 ```
 
 2. Install python test dependencies in a virtual env and run nose unit and integration tests
@@ -119,7 +119,7 @@ Full list of options in `config.json`:
   pip install --upgrade pip
   pip install .
   pip install pylint
-  pylint target_s3_csv -d C,W,unexpected-keyword-arg,duplicate-code
+  pylint target_s3 -d C,W,unexpected-keyword-arg,duplicate-code
 ```
 
 ## License
