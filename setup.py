@@ -20,6 +20,9 @@ setup(name="target-s3",
       install_requires=[
           'inflection==0.3.1',
           'boto3==1.9.57',
+          'numpy==1.19.2',
+          'pandas==1.1.2',
+          'pyarrow==1.0.1',
       ],
       extras_require={
           "test": [
