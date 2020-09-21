@@ -18,18 +18,13 @@ setup(name="target-s3",
       ],
       py_modules=["target_s3_csv"],
       install_requires=[
+          'singer-python==5.1.1',
           'inflection==0.3.1',
           'boto3==1.9.57',
           'numpy==1.19.2',
           'pandas==1.1.2',
           'pyarrow==1.0.1',
       ],
-      extras_require={
-          "test": [
-              "nose==1.3.7",
-              "pylint==2.4.2"
-          ]
-      },
       entry_points="""
           [console_scripts]
           target-s3=target_s3:main
