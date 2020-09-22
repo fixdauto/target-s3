@@ -22,7 +22,7 @@ from jsonschema import Draft4Validator, FormatChecker
 from target_s3 import s3
 from target_s3 import utils
 
-logger = singer.get_logger('target_s3')
+logger = singer.get_logger()
 
 
 # Upload created files to S3

@@ -12,7 +12,7 @@ import itertools
 from decimal import Decimal
 from dateutil.parser import parse
 
-logger = singer.get_logger('target_s3')
+logger = singer.get_logger()
 
 
 def validate_config(config):
