@@ -32,20 +32,6 @@ def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
     df = None
     with open(filename, 'r') as f:
         data = f.read().splitlines()
-    #     while True:
-    #         lines = list(itertools.islice(f, 100))
-    #
-    #         if lines:
-    #             lines_str = ''.join(lines)
-    #             data.append(pd.read_json(StringIO(lines_str), lines=True))
-    #         else:
-    #             break
-
-    # with open(filename, 'r') as f:
-    #     df = pd.read_json(f, lines=True, chunksize=1000)
-
-    # for x, l in enumerate(data[:2]):
-    #     logger.info('line: {} of csv: {}'.format(x, l))
 
     df = pd.DataFrame(data)
     df.columns = ['json_element']
@@ -145,7 +131,6 @@ def persist_messages(messages, config, s3_client):
             flattened_record = utils.flatten_record(record_to_load)
 
             if filename is None:
-                logger.info('first record: {}'.format(flattened_record))
                 filename = utils.get_temp_file_path(o,
                                                     flattened_record,
                                                     key_properties[stream],
@@ -195,30 +180,6 @@ def persist_messages(messages, config, s3_client):
             with open(filename, 'a') as f:
                 f.write(json.dumps(flattened_record))
                 f.write('\n')
-                # json.dump(flattened_record, f)
-
-            # if filename not in headers and not file_is_empty:
-            #     logger.info('(filename not in headers and not file_is_empty)')
-            #     with open(filename, 'r') as csv_file:
-            #         reader = csv.reader(csv_file,
-            #                             delimiter=delimiter,
-            #                             quotechar=quotechar)
-            #         first_line = next(reader)
-            #         headers[filename] = first_line if first_line else flattened_record.keys()
-            # else:
-            #     # logger.debug('setting headers: {}'.format(flattened_record.keys()))
-            #     headers[filename] = flattened_record.keys()
-            #
-            # with open(filename, 'a') as csv_file:
-            #     writer = csv.DictWriter(csv_file,
-            #                             headers[filename],
-            #                             extrasaction='raise',
-            #                             delimiter=delimiter,
-            #                             quotechar=quotechar)
-            #     if file_is_empty:
-            #         writer.writeheader()
-            #
-            #     writer.writerow(flattened_record)
 
             state = None
         elif message_type == 'STATE':
