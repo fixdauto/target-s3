@@ -18,6 +18,7 @@ setup(name="target-s3",
       ],
       py_modules=["target_s3_csv"],
       install_requires=[
+          'pytz==2018.4',
           'singer-python==5.1.1',
           'inflection==0.3.1',
           'boto3==1.9.57',
