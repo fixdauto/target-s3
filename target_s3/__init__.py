@@ -93,7 +93,7 @@ def persist_messages(messages, config, s3_client):
     filename = None
     s3_path, s3_filename = None, None
     now = datetime.now().strftime('%Y%m%dT%H%M%S')
-    max_file_size_mb = 1000
+    max_file_size_mb = config.get('max_temp_file_size_mb', 1000)
     stream = None
 
     for message in messages:
