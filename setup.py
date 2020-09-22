@@ -6,7 +6,7 @@ with open('README.md') as f:
     long_description = f.read()
 
 setup(name="target-s3",
-      version="1.4.0",
+      version="1.0.0",
       description="Singer.io target for uploading files to S3 - Meltano compatible",
       long_description=long_description,
       long_description_content_type='text/markdown',
@@ -23,7 +23,7 @@ setup(name="target-s3",
           'boto3==1.9.57',
           'backoff==1.3.2',
           'jsonlines==1.2.0',
-          'jsonschema==3.2.0',
+          'jsonschema==2.6.0',
           'numpy==1.19.2',
           'pandas==1.1.2',
           'pyarrow==1.0.1',
