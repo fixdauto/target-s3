@@ -42,9 +42,9 @@ def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
         compressed_file = filename.replace('jsonl', 'parquet')
         s3_target = s3_target + '.{}'.format('parquet')
         logger.info('df size: {}, compressed_file: {}'.format(df.shape, compressed_file))
-        df['idx_day'] = pd.to_datetime(df['time']).day
-        df['idx_month'] = pd.to_datetime(df['time']).month
-        df['idx_year'] = pd.to_datetime(df['time']).year
+        df['idx_day'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).day
+        df['idx_month'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).month
+        df['idx_year'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).year
         # df.to_csv(filename)
     filename_sufix_map = {'snappy': 'snappy', 'gzip': 'gz', 'brotli': 'br'}
 
