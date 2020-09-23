@@ -47,7 +47,7 @@ def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
 
     compressed_file = None
     if compression is None or compression.lower() == "none":
-        df.to_parquet(compressed_file, index=False, compression=None)
+        df.to_parquet(compressed_file, index=True, compression=None, use_threads=True)
     else:
         if compression in filename_sufix_map:
             compressed_file = "{}.{}".format(filename, filename_sufix_map[compression])
@@ -130,7 +130,7 @@ def persist_messages(messages, config, s3_client):
 
             flattened_record = utils.flatten_record(record_to_load)
 
-            if filename is None:
+            if filename is None or state is not None:
                 filename = utils.get_temp_file_path(o,
                                                     flattened_record,
                                                     key_properties[stream],
