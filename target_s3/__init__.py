@@ -53,7 +53,7 @@ def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
         df.to_parquet(compressed_file, index=True, compression=None, partition_cols=['idx_day', 'idx_month', 'idx_year'])
     else:
         if compression in filename_sufix_map:
-            compressed_file = "{}.{}".format(filename, filename_sufix_map[compression])
+            # compressed_file = "{}.{}".format(filename, filename_sufix_map[compression])
             df.to_parquet(compressed_file, index=False, compression=compression, partition_cols=['idx_day', 'idx_month', 'idx_year'])
             s3_target = s3_target + '.{}'.format(filename_sufix_map[compression])
         else:
