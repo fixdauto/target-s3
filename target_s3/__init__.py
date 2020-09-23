@@ -45,29 +45,29 @@ def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
         # df.to_csv(filename)
     filename_sufix_map = {'snappy': 'snappy', 'gzip': 'gz', 'brotli': 'br'}
 
-    compressed_file = None
+    compressed_file = 's3://{}/x_1.parquet'.format(s3_bucket)
     if compression is None or compression.lower() == "none":
-        df.to_parquet(compressed_file, index=True, compression=None, use_threads=True)
+        df.to_parquet(compressed_file, index=True, compression=None, partition_cols=['time'])
     else:
         if compression in filename_sufix_map:
             compressed_file = "{}.{}".format(filename, filename_sufix_map[compression])
-            df.to_parquet(compressed_file, index=False, compression=compression)
+            df.to_parquet(compressed_file, index=False, compression=compression, partition_cols=['time'])
             s3_target = s3_target + '.{}'.format(filename_sufix_map[compression])
         else:
             raise NotImplementedError(
                 """Compression type '{}' is not supported. Expected: {}""".format(compression, filename_sufix_map.keys())
             )
-    s3.upload_file(compressed_file or filename,
-                   s3_client,
-                   s3_bucket,
-                   s3_target,
-                   encryption_type=encryption_type,
-                   encryption_key=encryption_key)
+    # s3.upload_file(compressed_file or filename,
+    #                s3_client,
+    #                s3_bucket,
+    #                s3_target,
+    #                encryption_type=encryption_type,
+    #                encryption_key=encryption_key)
 
     # Remove the local file(s)
     os.remove(filename)
-    if compressed_file:
-        os.remove(compressed_file)
+    # if compressed_file:
+    #     os.remove(compressed_file)
 
 
 def emit_state(state):
