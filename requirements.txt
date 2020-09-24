@@ -2,10 +2,9 @@ pytz==2018.4
 singer-python==5.9.0
 inflection==0.5.1
 fsspec==0.8.2
-s3fs==0.5.1
 backoff==1.8.0
 jsonlines==1.2.0
 jsonschema==2.6.0
 pandas==1.1.2
 pyarrow==1.0.1
-boto3==1.15.4
+s3fs==0.5.1
