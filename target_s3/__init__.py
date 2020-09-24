@@ -17,7 +17,7 @@ from io import StringIO
 from sys import getsizeof
 
 import singer
-from jsonschema import Draft4Validator, FormatChecker
+from jsonschema import Draft7Validator, FormatChecker
 
 from target_s3 import s3
 from target_s3 import utils
@@ -195,7 +195,7 @@ def persist_messages(messages, config, s3_client):
                 schemas[stream] = utils.add_metadata_columns_to_schema(o)
 
             schema = utils.float_to_decimal(o['schema'])
-            validators[stream] = Draft4Validator(schema, format_checker=FormatChecker())
+            validators[stream] = Draft7Validator(schema, format_checker=FormatChecker())
             key_properties[stream] = o['key_properties']
             filename = None
         elif message_type == 'ACTIVATE_VERSION':
