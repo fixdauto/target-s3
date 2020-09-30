@@ -64,9 +64,9 @@ def upload_to_s3(s3_client, s3_bucket, filename, stream,
             )
 
     for (dirpath, dirnames, filenames) in walk(final_files_dir):
-        for filename in filenames:
-            temp_file = os.path.join(dirpath, filename)
-            s3_target = os.path.join(dirpath.split(s3_bucket)[-1], filename)
+        for fn in filenames:
+            temp_file = os.path.join(dirpath, fn)
+            s3_target = os.path.join(dirpath.split(s3_bucket)[-1], fn)
             s3.upload_file(temp_file,
                            s3_client,
                            s3_bucket,
@@ -74,9 +74,11 @@ def upload_to_s3(s3_client, s3_bucket, filename, stream,
                            encryption_type=encryption_type,
                            encryption_key=encryption_key)
 
-            # Remove the local file(s)
-            os.remove(temp_file)
     # Remove the local file(s)
+    for (dirpath, dirnames, filenames) in walk(final_files_dir):
+        for fn in filenames:
+            temp_file = os.path.join(dirpath, fn)
+            os.remove(temp_file)
     os.remove(filename)
             
 
