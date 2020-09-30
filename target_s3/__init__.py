@@ -64,7 +64,6 @@ def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
         for filename in filenames:
             temp_file = os.path.join(dirpath, filename)
             s3_target = dirpath.split(s3_bucket)[-1] + filename
-            print('Uploading file: {}'.format(filename))
             s3.upload_file(temp_file,
                            s3_client,
                            s3_bucket,
@@ -74,6 +73,8 @@ def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
 
             # Remove the local file(s)
             os.remove(temp_file)
+    # Remove the local file(s)
+    os.remove(filename)
             
 
 def emit_state(state):
