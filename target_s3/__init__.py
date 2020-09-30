@@ -56,7 +56,7 @@ def upload_to_s3(s3_client, s3_bucket, filename, stream, field_to_partition_by_t
     else:
         if compression in filename_sufix_map:
             # compressed_file = "{}.{}".format(filename, filename_sufix_map[compression])
-            df.to_parquet(final_files_dir, index=False, compression=compression,
+            df.to_parquet(final_files_dir, index=True, compression=compression,
                           partition_cols=['idx_year', 'idx_month', 'idx_day'])
         else:
             raise NotImplementedError(
