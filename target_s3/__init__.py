@@ -48,25 +48,26 @@ def upload_to_s3(s3_client, s3_bucket, filename, stream, field_to_partition_by_t
         df['idx_day'] = pd.DatetimeIndex(pd.to_datetime(df[field_to_partition_by_time])).day
         df['idx_month'] = pd.DatetimeIndex(pd.to_datetime(df[field_to_partition_by_time])).month
         df['idx_year'] = pd.DatetimeIndex(pd.to_datetime(df[field_to_partition_by_time])).year
-        # df.to_csv(filename)
+
     filename_sufix_map = {'snappy': 'snappy', 'gzip': 'gz', 'brotli': 'br'}
-    if compression is None or compression.lower() == "none":
+    if compression or compression.lower() == "none":
         df.to_parquet(final_files_dir, index=True, compression=None,
                       partition_cols=['idx_year', 'idx_month', 'idx_day'])
     else:
         if compression in filename_sufix_map:
-            # compressed_file = "{}.{}".format(filename, filename_sufix_map[compression])
             df.to_parquet(final_files_dir, index=True, compression=compression,
                           partition_cols=['idx_year', 'idx_month', 'idx_day'])
         else:
             raise NotImplementedError(
-                """Compression type '{}' is not supported. Expected: {}""".format(compression, filename_sufix_map.keys())
+                """Compression type '{}' is not supported. Expected: {}""".format(compression,
+                                                                                  filename_sufix_map.keys())
             )
 
     for (dirpath, dirnames, filenames) in walk(final_files_dir):
         for fn in filenames:
             temp_file = os.path.join(dirpath, fn)
             s3_target = os.path.join(dirpath.split(s3_bucket)[-1], fn)
+            s3_target = s3_target + '.' + filename_sufix_map.get(compression, '') if compression else s3_target
             s3_target = s3_target.lstrip('/')
             s3.upload_file(temp_file,
                            s3_client,
