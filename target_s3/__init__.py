@@ -27,10 +27,11 @@ logger = singer.get_logger()
 
 
 # Upload created files to S3
-def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
+def upload_to_s3(s3_client, s3_bucket, filename, stream,
                  compression=None, encryption_type=None, encryption_key=None):
-    data = []
+    data = None
     df = None
+    final_files_dir = ''
     with open(filename, 'r') as f:
         data = f.read().splitlines()
 
@@ -41,14 +42,14 @@ def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
 
     if df is not None:
         dir_path = os.path.dirname(os.path.realpath(filename))
-        logger.info('df size: {}, dir_path: {}'.format(df.shape, dir_path))
+        final_files_dir = os.path.join(dir_path, s3_bucket)
+        final_files_dir = os.path.join(final_files_dir, stream)
+        logger.info('df size: {}, final_files_dir: {}'.format(df.shape, final_files_dir))
         df['idx_day'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).day
         df['idx_month'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).month
         df['idx_year'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).year
         # df.to_csv(filename)
     filename_sufix_map = {'snappy': 'snappy', 'gzip': 'gz', 'brotli': 'br'}
-
-    final_files_dir = os.path.join(dir_path, s3_bucket)
     if compression is None or compression.lower() == "none":
         df.to_parquet(final_files_dir, index=True, compression=None,
                       partition_cols=['idx_year', 'idx_month', 'idx_day'])
@@ -141,13 +142,12 @@ def persist_messages(messages, config, s3_client):
 
             if filename is None:
                 filename = '{}.jsonl'.format(now)
-                filename = os.path.join(message['stream'], filename)
                 filename = os.path.join(tempfile.gettempdir(), filename)
                 filename = os.path.expanduser(filename)
                 file_size_counters[filename] = 0
                 file_count_counters[filename] = file_count_counters.get(filename, 1)
 
-            full_s3_target = s3_path + str(file_count_counters[filename]) + '_' + s3_filename
+            full_s3_target = str(file_count_counters[filename]) + '_' + filename
 
             if not (filename, full_s3_target) in filenames:
                 filenames.append((filename, full_s3_target))
@@ -160,7 +160,7 @@ def persist_messages(messages, config, s3_client):
             if file_size >> 20 > max_file_size_mb:
                 logger.info('Max file size reached: {}, dumping to s3...'.format(max_file_size_mb))
 
-                upload_to_s3(s3_client, config.get("s3_bucket"), filename, full_s3_target,
+                upload_to_s3(s3_client, config.get("s3_bucket"), filename, stream,
                              config.get("compression"),
                              config.get('encryption_type'),
                              config.get('encryption_key'))
@@ -198,7 +198,7 @@ def persist_messages(messages, config, s3_client):
 
     # Upload created CSV files to S3
     for filename, s3_target in filenames:
-        upload_to_s3(s3_client, config.get("s3_bucket"), filename, s3_target,
+        upload_to_s3(s3_client, config.get("s3_bucket"), filename, stream,
                      config.get("compression"),
                      config.get('encryption_type'),
                      config.get('encryption_key'))
