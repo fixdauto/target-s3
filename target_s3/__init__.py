@@ -27,7 +27,7 @@ logger = singer.get_logger()
 
 
 # Upload created files to S3
-def upload_to_s3(s3_client, s3_bucket, filename, stream,
+def upload_to_s3(s3_client, s3_bucket, filename, stream, field_to_partition_by_time,
                  compression=None, encryption_type=None, encryption_key=None):
     data = None
     df = None
@@ -45,9 +45,9 @@ def upload_to_s3(s3_client, s3_bucket, filename, stream,
         final_files_dir = os.path.join(dir_path, s3_bucket)
         final_files_dir = os.path.join(final_files_dir, stream)
         logger.info('df size: {}, final_files_dir: {}'.format(df.shape, final_files_dir))
-        df['idx_day'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).day
-        df['idx_month'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).month
-        df['idx_year'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).year
+        df['idx_day'] = pd.DatetimeIndex(pd.to_datetime(df[field_to_partition_by_time])).day
+        df['idx_month'] = pd.DatetimeIndex(pd.to_datetime(df[field_to_partition_by_time])).month
+        df['idx_year'] = pd.DatetimeIndex(pd.to_datetime(df[field_to_partition_by_time])).year
         # df.to_csv(filename)
     filename_sufix_map = {'snappy': 'snappy', 'gzip': 'gz', 'brotli': 'br'}
     if compression is None or compression.lower() == "none":
@@ -164,6 +164,7 @@ def persist_messages(messages, config, s3_client):
                 logger.info('Max file size reached: {}, dumping to s3...'.format(max_file_size_mb))
 
                 upload_to_s3(s3_client, config.get("s3_bucket"), filename, stream,
+                             config.get('field_to_partition_by_time'),
                              config.get("compression"),
                              config.get('encryption_type'),
                              config.get('encryption_key'))
@@ -194,6 +195,12 @@ def persist_messages(messages, config, s3_client):
             validators[stream] = Draft4Validator(schema, format_checker=FormatChecker())
             key_properties[stream] = o['key_properties']
             filename = None
+
+            if config.get('field_to_partition_by_time') not in key_properties[stream]:
+                raise Exception("""field_to_partition_by_time '{}' is not in key_properties: {}""".format(
+                    config.get('field_to_partition_by_time'), key_properties[stream])
+                )
+
         elif message_type == 'ACTIVATE_VERSION':
             logger.debug('ACTIVATE_VERSION message')
         else:
@@ -202,6 +209,7 @@ def persist_messages(messages, config, s3_client):
     # Upload created CSV files to S3
     for filename, s3_target in filenames:
         upload_to_s3(s3_client, config.get("s3_bucket"), filename, stream,
+                     config.get('field_to_partition_by_time'),
                      config.get("compression"),
                      config.get('encryption_type'),
                      config.get('encryption_key'))
