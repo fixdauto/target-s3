@@ -50,11 +50,13 @@ def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
 
     final_files_dir = os.path.join(dir_path, s3_bucket)
     if compression is None or compression.lower() == "none":
-        df.to_parquet(final_files_dir, index=True, compression=None, partition_cols=['idx_day', 'idx_month', 'idx_year'])
+        df.to_parquet(final_files_dir, index=True, compression=None,
+                      partition_cols=['idx_year', 'idx_month', 'idx_day'])
     else:
         if compression in filename_sufix_map:
             # compressed_file = "{}.{}".format(filename, filename_sufix_map[compression])
-            df.to_parquet(final_files_dir, index=False, compression=compression, partition_cols=['idx_day', 'idx_month', 'idx_year'])
+            df.to_parquet(final_files_dir, index=False, compression=compression,
+                          partition_cols=['idx_year', 'idx_month', 'idx_day'])
         else:
             raise NotImplementedError(
                 """Compression type '{}' is not supported. Expected: {}""".format(compression, filename_sufix_map.keys())
@@ -137,26 +139,13 @@ def persist_messages(messages, config, s3_client):
 
             flattened_record = utils.flatten_record(record_to_load)
 
-            if filename is None or state is not None:
-                filename = utils.get_temp_file_path(o,
-                                                    flattened_record,
-                                                    key_properties[stream],
-                                                    export_time=now,
-                                                    path_specification=config.get('path_specification'))
+            if filename is None:
+                filename = '{}.jsonl'.format(now)
+                filename = os.path.join(message['stream'], filename)
                 filename = os.path.join(tempfile.gettempdir(), filename)
                 filename = os.path.expanduser(filename)
                 file_size_counters[filename] = 0
                 file_count_counters[filename] = file_count_counters.get(filename, 1)
-
-                logger.info("Formatted temp filename: {}".format(filename))
-
-                s3_path, s3_filename = utils.get_s3_target_path(o,
-                                                                flattened_record,
-                                                                key_properties[stream],
-                                                                prefix=config.get('s3_filename_prefix'),
-                                                                export_time=now,
-                                                                path_specification=config.get('path_specification'))
-                logger.info("Formatted s3 path: {}".format(s3_path + s3_filename))
 
             full_s3_target = s3_path + str(file_count_counters[filename]) + '_' + s3_filename
 
