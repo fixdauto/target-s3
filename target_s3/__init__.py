@@ -67,6 +67,7 @@ def upload_to_s3(s3_client, s3_bucket, filename, stream,
         for fn in filenames:
             temp_file = os.path.join(dirpath, fn)
             s3_target = os.path.join(dirpath.split(s3_bucket)[-1], fn)
+            s3_target = s3_target.lstrip('/')
             s3.upload_file(temp_file,
                            s3_client,
                            s3_bucket,
