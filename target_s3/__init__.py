@@ -6,6 +6,7 @@ import gzip
 import io
 import json
 import os
+from os import walk
 import shutil
 import sys
 import tempfile
@@ -48,24 +49,27 @@ def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
         # df.to_csv(filename)
     filename_sufix_map = {'snappy': 'snappy', 'gzip': 'gz', 'brotli': 'br'}
 
-    compressed_file = 's3://{}/x_1.parquet'.format(s3_bucket)
     if compression is None or compression.lower() == "none":
-        df.to_parquet(compressed_file, index=True, compression=None, partition_cols=['idx_day', 'idx_month', 'idx_year'])
+        df.to_parquet(s3_bucket, index=True, compression=None, partition_cols=['idx_day', 'idx_month', 'idx_year'])
     else:
         if compression in filename_sufix_map:
             # compressed_file = "{}.{}".format(filename, filename_sufix_map[compression])
-            df.to_parquet(compressed_file, index=False, compression=compression, partition_cols=['idx_day', 'idx_month', 'idx_year'])
-            s3_target = s3_target + '.{}'.format(filename_sufix_map[compression])
+            df.to_parquet(s3_bucket, index=False, compression=compression, partition_cols=['idx_day', 'idx_month', 'idx_year'])
         else:
             raise NotImplementedError(
                 """Compression type '{}' is not supported. Expected: {}""".format(compression, filename_sufix_map.keys())
             )
-    # s3.upload_file(compressed_file or filename,
-    #                s3_client,
-    #                s3_bucket,
-    #                s3_target,
-    #                encryption_type=encryption_type,
-    #                encryption_key=encryption_key)
+
+    for (dirpath, dirnames, filenames) in walk(s3_bucket):
+        for file in filenames:
+            file = os.path.join(dirpath, file)
+            print('Uploading file: {}'.format(file))
+            s3.upload_file(file,
+                           s3_client,
+                           s3_bucket,
+                           s3_target,
+                           encryption_type=encryption_type,
+                           encryption_key=encryption_key)
 
     # Remove the local file(s)
     os.remove(filename)

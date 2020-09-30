@@ -27,9 +27,7 @@ setup(name="target-s3",
           "jsonschema==2.6.0",
           "pandas==1.1.2",
           "pyarrow==1.0.1",
-          "s3fs==0.5.1",
-          # "boto3==1.15.4",
-          # "botocore==1.18.4"
+          "boto3==1.15.4",
       ],
       entry_points="""
           [console_scripts]
