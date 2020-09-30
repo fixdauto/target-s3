@@ -40,42 +40,41 @@ def upload_to_s3(s3_client, s3_bucket, filename, s3_target,
     df = pd.json_normalize(df)
 
     if df is not None:
-        compressed_file = filename.replace('jsonl', 'parquet')
-        s3_target = s3_target + '.{}'.format('parquet')
-        logger.info('df size: {}, compressed_file: {}'.format(df.shape, compressed_file))
+        dir_path = os.path.dirname(os.path.realpath(filename))
+        logger.info('df size: {}, dir_path: {}'.format(df.shape, dir_path))
         df['idx_day'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).day
         df['idx_month'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).month
         df['idx_year'] = pd.DatetimeIndex(pd.to_datetime(df['time'])).year
         # df.to_csv(filename)
     filename_sufix_map = {'snappy': 'snappy', 'gzip': 'gz', 'brotli': 'br'}
 
+    final_files_dir = os.path.join(dir_path, s3_bucket)
     if compression is None or compression.lower() == "none":
-        df.to_parquet(s3_bucket, index=True, compression=None, partition_cols=['idx_day', 'idx_month', 'idx_year'])
+        df.to_parquet(final_files_dir, index=True, compression=None, partition_cols=['idx_day', 'idx_month', 'idx_year'])
     else:
         if compression in filename_sufix_map:
             # compressed_file = "{}.{}".format(filename, filename_sufix_map[compression])
-            df.to_parquet(s3_bucket, index=False, compression=compression, partition_cols=['idx_day', 'idx_month', 'idx_year'])
+            df.to_parquet(final_files_dir, index=False, compression=compression, partition_cols=['idx_day', 'idx_month', 'idx_year'])
         else:
             raise NotImplementedError(
                 """Compression type '{}' is not supported. Expected: {}""".format(compression, filename_sufix_map.keys())
             )
 
-    for (dirpath, dirnames, filenames) in walk(s3_bucket):
-        for file in filenames:
-            file = os.path.join(dirpath, file)
-            print('Uploading file: {}'.format(file))
-            s3.upload_file(file,
+    for (dirpath, dirnames, filenames) in walk(final_files_dir):
+        for filename in filenames:
+            temp_file = os.path.join(dirpath, filename)
+            s3_target = dirpath.split(s3_bucket)[-1] + filename
+            print('Uploading file: {}'.format(filename))
+            s3.upload_file(temp_file,
                            s3_client,
                            s3_bucket,
                            s3_target,
                            encryption_type=encryption_type,
                            encryption_key=encryption_key)
 
-    # Remove the local file(s)
-    os.remove(filename)
-    # if compressed_file:
-    #     os.remove(compressed_file)
-
+            # Remove the local file(s)
+            os.remove(temp_file)
+            
 
 def emit_state(state):
     if state is not None:
