@@ -16,6 +16,7 @@ import pyarrow as pa
 import itertools
 from io import StringIO
 from sys import getsizeof
+import pickle
 
 import singer
 from jsonschema import Draft4Validator, FormatChecker
@@ -26,36 +27,78 @@ from target_s3 import utils
 logger = singer.get_logger()
 
 
+def write_temp_pickle(data={}):
+    temp_unique_pkl = 'temp_unique.pickle'
+    dir_temp_file = os.path.join(tempfile.gettempdir(), temp_unique_pkl)
+    with open(dir_temp_file, 'wb') as handle:
+        pickle.dump(data, handle)
+
+
+def read_temp_pickle():
+    data = {}
+    temp_unique_pkl = 'temp_unique.pickle'
+    dir_temp_file = os.path.join(tempfile.gettempdir(), temp_unique_pkl)
+    if os.path.isfile(dir_temp_file):
+        with open(dir_temp_file, 'rb') as handle:
+            data = pickle.load(handle)
+    return data
+
+
 # Upload created files to S3
 def upload_to_s3(s3_client, s3_bucket, filename, stream, field_to_partition_by_time,
-                 compression=None, encryption_type=None, encryption_key=None):
+                 record_unique_field, compression=None, encryption_type=None, encryption_key=None):
     data = None
     df = None
     final_files_dir = ''
     with open(filename, 'r') as f:
         data = f.read().splitlines()
 
-    df = pd.DataFrame(data)
-    df.columns = ['json_element']
-    df = df['json_element'].apply(json.loads)
-    df = pd.json_normalize(df)
+        df = pd.DataFrame(data)
+        df.columns = ['json_element']
+        df = df['json_element'].apply(json.loads)
+        df = pd.json_normalize(df)
+        logger.info('df orginal size: {}'.format(df.shape))
 
     if df is not None:
+        if record_unique_field and record_unique_field in df:
+            df = df.infer_objects()
+            dtypes = {}
+            for c in df.columns:
+                try:
+                    df[c] = pd.to_numeric(df[c])
+                    dtypes[df[c].dtype] = dtypes.get(df[c].dtype, 0) + 1
+                except:
+                    pass
+            logger.info('df dtypes: {}'.format(dtypes))
+            logger.info('df infer_objects/to_numeric size: {}'.format(df.shape))
+
+            unique_ids_already_processed = read_temp_pickle()
+            df = df[~df[record_unique_field].isin(unique_ids_already_processed)]
+            logger.info('df filtered size: {}'.format(df.shape))
+            new_unique_ids = set(df[record_unique_field].unique())
+            logger.info('unique_ids_already_processed: {}, new_unique_ids: {}'.format(
+                len(unique_ids_already_processed), len(new_unique_ids)))
+            unique_ids_already_processed = set(unique_ids_already_processed).union(new_unique_ids)
+            write_temp_pickle(unique_ids_already_processed)
+
         dir_path = os.path.dirname(os.path.realpath(filename))
         final_files_dir = os.path.join(dir_path, s3_bucket)
         final_files_dir = os.path.join(final_files_dir, stream)
-        logger.info('df size: {}, final_files_dir: {}'.format(df.shape, final_files_dir))
+        insert_id_count = len(df[record_unique_field].unique())
+        logger.info('df size: {}, record_unique_field count: {}'.format(df.shape, insert_id_count))
+
+        logger.info('final_files_dir: {}'.format(final_files_dir))
         df['idx_day'] = pd.DatetimeIndex(pd.to_datetime(df[field_to_partition_by_time])).day
         df['idx_month'] = pd.DatetimeIndex(pd.to_datetime(df[field_to_partition_by_time])).month
         df['idx_year'] = pd.DatetimeIndex(pd.to_datetime(df[field_to_partition_by_time])).year
 
     filename_sufix_map = {'snappy': 'snappy', 'gzip': 'gz', 'brotli': 'br'}
-    if compression or compression.lower() == "none":
+    if compression is None or compression.lower() == "none":
         df.to_parquet(final_files_dir, index=True, compression=None,
                       partition_cols=['idx_year', 'idx_month', 'idx_day'])
     else:
         if compression in filename_sufix_map:
-            df.to_parquet(final_files_dir, index=True, compression=compression,
+            df.to_parquet(final_files_dir, index=False, compression=compression,
                           partition_cols=['idx_year', 'idx_month', 'idx_day'])
         else:
             raise NotImplementedError(
@@ -67,8 +110,6 @@ def upload_to_s3(s3_client, s3_bucket, filename, stream, field_to_partition_by_t
         for fn in filenames:
             temp_file = os.path.join(dirpath, fn)
             s3_target = os.path.join(dirpath.split(s3_bucket)[-1], fn)
-            if filename_sufix_map.get(compression, '') not in s3_target:
-                s3_target = s3_target + '.' + filename_sufix_map.get(compression, '') if compression else s3_target
             s3_target = s3_target.lstrip('/')
             s3.upload_file(temp_file,
                            s3_client,
@@ -83,7 +124,7 @@ def upload_to_s3(s3_client, s3_bucket, filename, stream, field_to_partition_by_t
             temp_file = os.path.join(dirpath, fn)
             os.remove(temp_file)
     os.remove(filename)
-            
+
 
 def emit_state(state):
     if state is not None:
@@ -93,7 +134,6 @@ def emit_state(state):
         sys.stdout.flush()
 
 
-# pylint: disable=too-many-locals,too-many-branches,too-many-statements
 def persist_messages(messages, config, s3_client):
     state = None
     schemas = {}
@@ -111,6 +151,10 @@ def persist_messages(messages, config, s3_client):
     max_file_size_mb = config.get('max_temp_file_size_mb', 1000)
     stream = None
 
+    if config.get('record_unique_field'):
+        a = set()
+        write_temp_pickle()
+
     for message in messages:
         try:
             o = singer.parse_message(message).asdict()
@@ -119,7 +163,10 @@ def persist_messages(messages, config, s3_client):
             raise
         message_type = o['type']
         # if message_type != 'RECORD':
-        #     logger.info("singer message: {}".format(o))
+        #     logger.info("{} - message: {}".format(message_type, o))
+
+        # if message_type not in message_types:
+        #     logger.info("{} - message: {}".format(message_type, o))
 
         if message_type == 'RECORD':
             if o['stream'] not in schemas:
@@ -167,6 +214,7 @@ def persist_messages(messages, config, s3_client):
 
                 upload_to_s3(s3_client, config.get("s3_bucket"), filename, stream,
                              config.get('field_to_partition_by_time'),
+                             config.get('record_unique_field'),
                              config.get("compression"),
                              config.get('encryption_type'),
                              config.get('encryption_key'))
@@ -212,6 +260,7 @@ def persist_messages(messages, config, s3_client):
     for filename, s3_target in filenames:
         upload_to_s3(s3_client, config.get("s3_bucket"), filename, stream,
                      config.get('field_to_partition_by_time'),
+                     config.get('record_unique_field'),
                      config.get("compression"),
                      config.get('encryption_type'),
                      config.get('encryption_key'))
