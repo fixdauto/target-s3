@@ -61,25 +61,29 @@ def upload_to_s3(s3_client, s3_bucket, filename, stream, field_to_partition_by_t
 
     if df is not None:
         if record_unique_field and record_unique_field in df:
-            df = df.infer_objects()
-            dtypes = {}
-            for c in df.columns:
-                try:
-                    df[c] = pd.to_numeric(df[c])
-                    dtypes[df[c].dtype] = dtypes.get(df[c].dtype, 0) + 1
-                except:
-                    pass
-            logger.info('df dtypes: {}'.format(dtypes))
-            logger.info('df infer_objects/to_numeric size: {}'.format(df.shape))
-
             unique_ids_already_processed = read_temp_pickle()
             df = df[~df[record_unique_field].isin(unique_ids_already_processed)]
             logger.info('df filtered size: {}'.format(df.shape))
+            df = df.drop_duplicates()
+            logger.info('df after drop_duplicates size: {}'.format(df.shape))
+            # df = df.groupby(record_unique_field).first().reset_index()
+            # logger.info('df first record of each unique_id size: {}'.format(df.shape))
             new_unique_ids = set(df[record_unique_field].unique())
             logger.info('unique_ids_already_processed: {}, new_unique_ids: {}'.format(
                 len(unique_ids_already_processed), len(new_unique_ids)))
             unique_ids_already_processed = set(unique_ids_already_processed).union(new_unique_ids)
             write_temp_pickle(unique_ids_already_processed)
+
+            df = df.infer_objects()
+            dtypes = {}
+            for c in df.columns:
+                try:
+                    df[c] = pd.to_numeric(df[c])
+                    dtypes[str(df[c].dtype)] = dtypes.get(str(df[c].dtype), 0) + 1
+                except:
+                    pass
+            logger.info('df info: {}'.format(dtypes))
+            logger.info('df infer_objects/to_numeric size: {}'.format(df.shape))
 
         dir_path = os.path.dirname(os.path.realpath(filename))
         final_files_dir = os.path.join(dir_path, s3_bucket)
