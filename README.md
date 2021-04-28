@@ -1,5 +1,11 @@
 # target-s3
 
+# Notice: Unmaintained
+
+This project is a fork of [Pipelinewise's `target-s3`](https://github.com/transferwise/pipelinewise-target-s3-csv) where we experimented with adding new features but ultimately are no longer maintaining this project and do not recommend it's use in prodcution. See more here: https://github.com/fixdauto/target-s3/issues/1#issuecomment-828087153
+
+---
+
 [![PyPI version](https://badge.fury.io/py/target-s3.svg)](https://badge.fury.io/py/target-s3)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/target-s3.svg)](https://pypi.org/project/target-s3/)
 [![License: Apache2](https://img.shields.io/badge/License-Apache2-yellow.svg)](https://opensource.org/licenses/Apache-2.0)
